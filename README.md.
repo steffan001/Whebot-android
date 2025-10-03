@@ -1,0 +1,184 @@
+Great — I’ll start pasting the project files now. I’ll send them in manageable chunks so you can copy-paste each file into a new GitHub repo (steffan001/whebot-android) from your phone. After these initial config files I’ll paste the Android source files, server files, and the GitHub Actions workflow that builds the APK automatically.
+
+Chunk 1 — README + quick upload & build instructions (paste this first as README.md)
+
+# WheBot (steffan001) — Android App (WheBot v1)
+
+This repository contains the full WheBot Android project (Jetpack Compose) and a companion server (whebot-server) for optional online sync.  
+The app includes preloaded draw-history support, hot/cold/overdue prediction logic, and a History Checker for Cash Pot, Lotto, Pick 4, and Win for Life.
+
+---
+
+## What you will get
+- Android app source (Kotlin, Jetpack Compose)
+- Preloaded history data (small s9ample; replaceable)
+- Server code (Node.js + Express) for online sync and backups
+- GitHub Actions workflow that builds an APK automatically
+- Instructions to deploy server on Render and to download APK (no PC required)
+
+---
+
+## Uploading to GitHub from your phone (quick)
+1. Open **GitHub** app or website (https://github.com) and sign into **steffan001**.
+2. Tap **New Repository** → name it `whebot-android`.
+3. Create the repo (leave README empty for now).
+4. In the repo, tap **Add file → Create new file** and paste the files I provide here (start with `README.md`). Commit each file.
+   - Tip: For many files it’s easier to use the GitHub web "Upload files" option — create files locally in your phone's notes app, then upload them.
+5. Repeat for each file I paste (I’ll label filenames clearly).
+
+---
+
+## Deploy the backend server (optional but recommended)
+1. Create a second repo `whebot-server` and add the server files I’ll paste.
+2. Go to https://render.com → Create account → New → Web Service → Connect to GitHub repo `whebot-server`.
+3. Use `npm start` as the start command. Render will deploy and provide a public URL (e.g., `https://whebot-server.onrender.com`).
+4. After deployment, copy the server base URL and paste it into `app/src/main/java/.../network/WheBotApi.kt` (I will show where).
+
+---
+
+## Build APK automatically (GitHub Actions)
+I include a GitHub Actions workflow (`.github/workflows/android-build.yml`) that runs on push and produces an APK artifact.
+After you push the repo:
+1. Go to **Actions** tab in your repo, select the workflow run (it will run automatically).
+2. When the run finishes, open the run → scroll to **Artifacts** → download the `app-release.apk` (or `app-debug.apk`).
+3. Open the APK link on your phone and install (allow unknown sources).
+
+---
+
+## If you prefer I can also:
+- Provide a ZIP of all files for you to upload in one go.
+- Or I can paste files in order — continue pasting the next files now.
+
+---
+
+**End of chunk 1.**  
+Next I’ll paste the Gradle config and `AndroidManifest.xml`. Paste them into `settings.gradle`, the top-level `build.gradle`, `gradle.properties`, and `app/build.gradle`, and then `app/src/main/AndroidManifest.xml`.
+
+
+---
+
+Chunk 2 — Gradle & Manifest (paste these next)
+
+File: settings.gradle
+
+rootProject.name = "WheBot"
+include ':app'
+
+File: build.gradle (project level)
+
+// build.gradle (Project)
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.1.0"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+File: gradle.properties
+
+org.gradle.jvmargs=-Xmx2g
+kotlin.code.style=official
+android.useAndroidX=true
+
+File: app/build.gradle (module)
+
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.whebot.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.whebot.app"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "0.1"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.3'
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    packagingOptions {
+        resources.excludes += '/META-INF/{AL2.0,LGPL2.1}'
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:1.10.1"
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "com.google.android.material:material:1.9.0"
+
+    // Jetpack Compose
+    implementation "androidx.compose.ui:ui:1.5.0"
+    implementation "androidx.compose.material3:material3:1.1.0"
+    implementation "androidx.compose.ui:ui-tooling-preview:1.5.0"
+    debugImplementation "androidx.compose.ui:ui-tooling:1.5.0"
+
+    // Navigation
+    implementation "androidx.navigation:navigation-compose:2.7.0"
+
+    // Ktor (for network) - optional; included for online sync
+    implementation "io.ktor:ktor-client-cio:2.3.4"
+    implementation "io.ktor:ktor-client-content-negotiation:2.3.4"
+    implementation "io.ktor:ktor-serialization-kotlinx-json:2.3.4"
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.0"
+}
+
+File: app/src/main/AndroidManifest.xml
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.whebot.app">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:label="WheBot"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.WheBot">
+        <activity android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+
+
+---
+
+I’ll continue pasting the Android source files (MainActivity, navigation, UI screens, network API, HistoryChecker, PlayWhe with stats, theme). Paste these next when you’re ready — say nothing and I’ll keep posting them in the next response.
+
